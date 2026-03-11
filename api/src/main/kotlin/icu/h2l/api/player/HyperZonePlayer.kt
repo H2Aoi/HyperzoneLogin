@@ -69,4 +69,9 @@ interface HyperZonePlayer {
      * 获取当前玩家对应的 GameProfile。
      */
     fun getGameProfile(): GameProfile
+
+    /**
+     * 设置验证服务器返回的 GameProfile properties（皮肤等）。
+     */
+    fun setOnlineProperties(properties: List<GameProfile.Property>) {}
 }

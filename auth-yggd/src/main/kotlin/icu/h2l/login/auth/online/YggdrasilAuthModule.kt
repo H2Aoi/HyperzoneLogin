@@ -170,6 +170,8 @@ class YggdrasilAuthModule(
         try {
             if (result is YggdrasilAuthResult.Success) {
                 info { "玩家 $username 通过 Yggdrasil 验证，Entry: ${result.entryId}" }
+                // 保存 Mojang 返回的 GameProfile properties（皮肤等）
+                handler.setOnlineProperties(result.profile.properties)
                 if (!handler.isVerified()) {
                     handler.overVerify()
                     debug { "玩家 $username 调用验证完成接口成功，Entry: ${result.entryId}"  }
@@ -330,9 +332,9 @@ class YggdrasilAuthModule(
         )
 
         if (secondBatchResult is YggdrasilAuthResult.Success) {
-            val registeredProfile = handler.register()
             val entryName = secondBatchResult.profile.name ?: context.username
             val entryUuid = secondBatchResult.profile.id ?: context.uuid
+            val registeredProfile = handler.register(entryName, entryUuid)
 
             val bound = entryDatabaseHelper.createEntry(
                 entryId = secondBatchResult.entryId,

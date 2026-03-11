@@ -91,10 +91,12 @@ class EventListener {
             return
         }
 
+        // 使用验证服务器返回的皮肤属性，而不是 randomProfile 的空属性
+        val gameProfileWithSkin = hyperZonePlayer.getGameProfile()
         event.gameProfile = GameProfile(
             resolvedProfile.uuid,
             resolvedProfile.name,
-            originalProfile.properties,
+            gameProfileWithSkin.properties,
         )
     }
 }

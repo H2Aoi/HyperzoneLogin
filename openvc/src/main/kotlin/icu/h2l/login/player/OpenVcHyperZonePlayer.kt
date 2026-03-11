@@ -30,6 +30,12 @@ class OpenVcHyperZonePlayer(
     @Volatile
     private var limboPlayer: LimboPlayer? = null
 
+    /**
+     * 存储 Mojang 验证返回的 GameProfile properties（皮肤等）
+     */
+    @Volatile
+    var onlineProfileProperties: List<GameProfile.Property> = emptyList()
+
     private val databaseHelper = HyperZoneLoginMain.getInstance().databaseHelper
 
     init {
@@ -120,12 +126,16 @@ class OpenVcHyperZonePlayer(
         messageQueue.offer(message)
     }
 
+    override fun setOnlineProperties(properties: List<GameProfile.Property>) {
+        onlineProfileProperties = properties
+    }
+
     override fun getGameProfile(): GameProfile {
         val resolvedProfile = getProfile()
         return GameProfile(
             resolvedProfile!!.uuid,
             resolvedProfile.name,
-            ArrayList()
+            onlineProfileProperties
         )
     }
 }

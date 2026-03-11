@@ -8,6 +8,9 @@ dependencies {
     implementation(project(":auth-yggd"))
     implementation(project(":data-merge"))
     implementation(project(":api"))
+//    Kotlin runtime (bundled to avoid version mismatch with mckotlin)
+    implementation(kotlin("stdlib"))
+    implementation(kotlin("reflect"))
 //    implementation(project(":vcinjector"))
 
 // Exposed ORM
@@ -56,11 +59,14 @@ tasks {
         archiveBaseName.set("HyperZoneLogin")
         archiveClassifier.set("")
         dependencies {
-//            不加会导致mixin之后认不到
-            exclude(dependency("org.jetbrains.kotlin:kotlin-stdlib"))
-            exclude(dependency("org.jetbrains.kotlin:kotlin-reflect"))
-
             exclude(dependency("org.jetbrains:annotations"))
+//            Kotlin stdlib & reflect
+            include(dependency("org.jetbrains.kotlin:kotlin-stdlib"))
+            include(dependency("org.jetbrains.kotlin:kotlin-reflect"))
+//            kotlinx-coroutines
+            include(dependency("org.jetbrains.kotlinx:kotlinx-coroutines-core"))
+            include(dependency("org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm"))
+            include(dependency("org.jetbrains.kotlinx:kotlinx-coroutines-bom"))
 //            extra-kotlin
             include(dependency("org.spongepowered:configurate-extra-kotlin"))
 //            Exposed ORM

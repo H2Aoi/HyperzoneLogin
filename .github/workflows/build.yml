@@ -1,0 +1,45 @@
+name: Build HyperZoneLogin
+
+# 触发条件：推送到 main/master 分支，或者在网页上手动触发
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+  workflow_dispatch: 
+
+jobs:
+  build:
+    runs-on: ubuntu-latest 
+
+    steps:
+    # 1. 检出仓库代码
+    - name: Checkout Code
+      uses: actions/checkout@v4
+
+    # 2. 配置 Java 环境 (如果你的项目使用的是 Java 17，请将下面的 '21' 改为 '17')
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    # 3. 自动配置 Gradle 环境和缓存
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+
+    # 4. 赋予 gradlew 执行权限并执行编译打包命令
+    - name: Build with Gradle
+      run: |
+        chmod +x ./gradlew
+        ./gradlew build shadowJar
+
+    # 5. 上传生成的 Jar 包到 GitHub Actions 页面供下载
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: HyperZoneLogin-Plugin
+        # 尝试匹配 openvc 模块下 build/libs 目录中的最终产物
+        path: |
+          openvc/build/libs/*-all.jar
+          openvc/build/libs/*.jar

@@ -264,7 +264,7 @@ class YggdrasilAuthModule(
         runSecondBatchAuth(player, secondBatchContext)
     }
 
-    private fun validateFirstBatchProfile(
+        private fun validateFirstBatchProfile(
         player: Player,
         username: String,
         uuid: UUID,
@@ -275,19 +275,37 @@ class YggdrasilAuthModule(
         val hyperZonePlayer = playerAccessor.getByPlayer(player)
 
         val playerProfile = hyperZonePlayer.getProfile()
-            ?: return YggdrasilAuthResult.Failed("第一批次验证失败：未获取到玩家 Profile")
+            ?: return YggdrasilAuthResult.Failed("???????????????Profile")
+
+        val entryName = success.profile.name ?: username
+        val entryUuid = success.profile.id ?: uuid
+
+        hyperZonePlayer.updateGameProfileProperties(success.profile.properties)
 
         val entryProfileId = entryDatabaseHelper.findEntryByNameAndUuid(
             entryId = success.entryId,
-            name = username,
-            uuid = uuid
-        ) ?: return YggdrasilAuthResult.Failed("第一批次验证失败：未获取到 Entry Profile")
+            name = entryName,
+            uuid = entryUuid
+        ) ?: return YggdrasilAuthResult.Failed("?????????????Entry Profile")
 
-        if (playerProfile.id == entryProfileId) {
-            return null
+        if (playerProfile.id != entryProfileId) {
+            return YggdrasilAuthResult.Failed("???????????Profile?Entry Profile???")
         }
 
-        return YggdrasilAuthResult.Failed("第一批次验证失败：玩家 Profile 与 Entry Profile 不一致")
+        if (playerProfile.uuid != entryUuid) {
+            val updated = hyperZonePlayer.updateUuid(entryUuid)
+            if (!updated) {
+                return YggdrasilAuthResult.Failed("???????????Profile UUID??")
+            }
+            entryDatabaseHelper.updateEntryByProfile(
+                entryId = success.entryId,
+                pid = playerProfile.id,
+                name = entryName,
+                uuid = entryUuid
+            )
+        }
+
+        return null
     }
 
     private fun notifyFirstBatchFailure(player: Player, username: String, result: YggdrasilAuthResult) {
@@ -305,16 +323,11 @@ class YggdrasilAuthModule(
         handler.sendMessage(Component.text(message))
     }
 
-    private suspend fun runSecondBatchAuth(
+        private suspend fun runSecondBatchAuth(
         player: Player,
         context: SecondBatchContext
     ): YggdrasilAuthResult {
         val handler = playerAccessor.getByPlayer(player)
-
-        if (!handler.canRegister()) {
-            debug { "玩家 ${context.username} 不可注册，终止第二批次验证" }
-            return YggdrasilAuthResult.Failed("Player already registered")
-        }
 
         val allYggdrasilEntries = getAllYggdrasilEntries()
         val secondBatchRequests = buildAuthRequests(allYggdrasilEntries)
@@ -328,23 +341,52 @@ class YggdrasilAuthModule(
             context.serverId,
             context.playerIp,
             secondBatchRequests,
-            "第二批次"
+            "????"
         )
 
         if (secondBatchResult is YggdrasilAuthResult.Success) {
             val entryName = secondBatchResult.profile.name ?: context.username
             val entryUuid = secondBatchResult.profile.id ?: context.uuid
-            val registeredProfile = handler.register(entryName, entryUuid)
+
+            handler.updateGameProfileProperties(secondBatchResult.profile.properties)
+
+            val profile = if (handler.canRegister()) {
+                handler.register(entryName, entryUuid)
+            } else {
+                handler.getProfile()
+                    ?: return YggdrasilAuthResult.Failed("Player profile not found")
+            }
+
+            if (profile.uuid != entryUuid) {
+                val updated = handler.updateUuid(entryUuid)
+                if (!updated) {
+                    return YggdrasilAuthResult.Failed("??Profile UUID??")
+                }
+            }
 
             val bound = entryDatabaseHelper.createEntry(
                 entryId = secondBatchResult.entryId,
                 name = entryName,
                 uuid = entryUuid,
-                pid = registeredProfile.id
+                pid = profile.id
             )
 
             if (!bound) {
-                return YggdrasilAuthResult.Failed("绑定 Entry 记录失败")
+                val updated = entryDatabaseHelper.updateEntryByProfile(
+                    entryId = secondBatchResult.entryId,
+                    pid = profile.id,
+                    name = entryName,
+                    uuid = entryUuid
+                )
+
+                if (!updated && !entryDatabaseHelper.verifyEntry(
+                        entryId = secondBatchResult.entryId,
+                        name = entryName,
+                        uuid = entryUuid
+                    )
+                ) {
+                    return YggdrasilAuthResult.Failed("??Entry????")
+                }
             }
         }
 

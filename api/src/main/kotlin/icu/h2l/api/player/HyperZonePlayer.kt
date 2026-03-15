@@ -1,6 +1,5 @@
 package icu.h2l.api.player
 
-import com.velocitypowered.api.proxy.Player
 import com.velocitypowered.api.util.GameProfile
 import icu.h2l.api.db.Profile
 import net.kyori.adventure.text.Component

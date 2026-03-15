@@ -174,6 +174,32 @@ class DatabaseHelper(
      * @param profileId 档案ID
      * @return 档案信息，如果不存在返回 null
      */
+    fun updateProfileUuid(profileId: UUID, newUuid: UUID): Boolean {
+        return try {
+            val updated = manager.executeTransaction {
+                profileTable.update({ profileTable.id eq profileId }) {
+                    it[uuid] = newUuid
+                }
+            } > 0
+
+            if (!updated) {
+                return false
+            }
+
+            val oldCached = profileCacheById[profileId]
+            if (oldCached != null) {
+                removeProfileCache(oldCached)
+            }
+
+            loadProfileById(profileId)?.let { cacheProfile(it) }
+
+            true
+        } catch (e: Exception) {
+            warn { "????UUID??: ${e.message}" }
+            false
+        }
+    }
+
     fun getProfile(profileId: UUID): Profile? {
         profileCacheById[profileId]?.let { return it }
 

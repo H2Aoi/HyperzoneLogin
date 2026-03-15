@@ -58,6 +58,22 @@ class EntryDatabaseHelper(
         }
     }
 
+    fun updateEntryByProfile(entryId: String, pid: UUID, name: String, uuid: UUID): Boolean {
+        val entryTable = entryTableManager.getEntryTable(entryId) ?: return false
+
+        return try {
+            databaseManager.executeTransaction {
+                entryTable.update({ entryTable.pid eq pid }) {
+                    it[entryTable.name] = name
+                    it[entryTable.uuid] = uuid
+                }
+            } > 0
+        } catch (e: Exception) {
+            warn { "????????: ${e.message}" }
+            false
+        }
+    }
+
     fun verifyEntry(entryId: String, name: String, uuid: UUID): Boolean {
         val entryTable = entryTableManager.getEntryTable(entryId) ?: return false
 

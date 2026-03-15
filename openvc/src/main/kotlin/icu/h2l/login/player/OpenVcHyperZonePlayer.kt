@@ -38,6 +38,9 @@ class OpenVcHyperZonePlayer(
 
     private val databaseHelper = HyperZoneLoginMain.getInstance().databaseHelper
 
+    @Volatile
+    private var profileProperties: List<GameProfile.Property> = emptyList()
+
     init {
         profileId = databaseHelper
             .getProfileByNameOrUuid(userName, uuid)
@@ -97,6 +100,25 @@ class OpenVcHyperZonePlayer(
     override fun getProfile(): Profile? {
         val currentProfileId = profileId ?: return null
         return databaseHelper.getProfile(currentProfileId)
+    }
+
+
+    override fun updateUuid(uuid: UUID): Boolean {
+        val currentProfileId = profileId ?: return false
+        if (uuid == this.uuid) {
+            return true
+        }
+        val updated = databaseHelper.updateProfileUuid(currentProfileId, uuid)
+        if (updated) {
+            this.uuid = uuid
+        }
+        return updated
+    }
+
+
+    override fun updateGameProfileProperties(properties: List<GameProfile.Property>): Boolean {
+        profileProperties = properties
+        return true
     }
 
     override fun isVerified(): Boolean {

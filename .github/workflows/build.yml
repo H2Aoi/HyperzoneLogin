@@ -58,18 +58,26 @@ jobs:
               cp -f "$f" "dist/${base%.*}-latest.jar"
             done
           fi
+          if [ "$found" -eq 0 ]; then
+            echo "No jar artifacts found under openvc/build/libs/"
+            exit 1
+          fi
 
       - name: Commit & Push dist/
         shell: bash
         run: |
           set -euo pipefail
-          if git diff --quiet -- dist; then
+          if [ -z "$(git status --porcelain dist)" ]; then
             echo "dist/ unchanged; skipping commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add dist
+          if git diff --cached --quiet; then
+            echo "dist/ staged but unchanged; skipping commit."
+            exit 0
+          fi
           git commit -m "chore(ci): update dist artifacts [skip ci]"
           git push origin HEAD:master
 
@@ -78,4 +86,3 @@ jobs:
         with:
           name: HyperZoneLogin-dist
           path: dist/**
-
